@@ -18,9 +18,9 @@ type Service struct {
 type ListFilterService struct {
 	Name          string
 	Price         int
-	Uuid          uuid.UUID
-	FromStartDate time.Time
-	ToStartDate   time.Time
+	Uuid          *uuid.UUID
+	FromStartDate *time.Time
+	ToStartDate   *time.Time
 	SortBy        string
 	SortDir       string
 	Limit         int

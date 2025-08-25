@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/animans/REST-API-test-task/domain"
@@ -136,6 +137,65 @@ func (r *ServiceRepoPG) DeleteByID(sid string) error {
 	return nil
 }
 
-func (r *ServiceRepoPG) ListByFilter(domain.ListFilterService) (domain.ListResult, error) {
+func (r *ServiceRepoPG) ListByFilter(s domain.ListFilterService) (domain.ListResult, error) {
+	var (
+		args   []any
+		values []string
+	)
+	base := `
+SELECT service_name, service_price, service_uuid, service_created_at
+FROM service_list
+`
 
+	if s.Name != "" {
+		args = append(args, "%"+s.Name+"%")
+		values = append(values, fmt.Sprintf("service_name=$%d", len(args)))
+	}
+	if s.Price > 0 {
+		args = append(args, s.Price)
+		values = append(values, fmt.Sprintf("service_price=$%d", len(args)))
+	}
+	if s.FromStartDate != nil {
+		args = append(args, s.FromStartDate)
+		values = append(values, fmt.Sprintf("service_created_at>=$%d", len(args)))
+	}
+	if s.ToStartDate != nil {
+		args = append(args, s.ToStartDate)
+		values = append(values, fmt.Sprintf("service_created_at<=$%d", len(args)))
+	}
+
+	var where string
+	if len(values) > 0 {
+		where = "WHERE " + strings.Join(values, " AND ") + "\n"
+	}
+
+	order := fmt.Sprintf("ORDER BY %s %s\n", s.SortBy, s.SortDir)
+
+	args = append(args, s.Limit)
+	limit := fmt.Sprintf("LIMIT $%d\n", len(args))
+
+	sql := base + where + order + limit
+
+	rows, err := r.db.Query(sql, args...)
+	if err != nil {
+		return domain.ListResult{}, err
+	}
+	defer rows.Close()
+
+	out := domain.ListResult{}
+	for rows.Next() {
+		var cr domain.CreatedRequest
+		var startDate time.Time
+		var uuid uuid.UUID
+		if err := rows.Scan(&cr.Name, &cr.Price, &uuid, &startDate); err != nil {
+			return domain.ListResult{}, err
+		}
+		cr.StartDate = startDate.Format("01-2006")
+		cr.Uuid = uuid.String()
+		out.Items = append(out.Items, cr)
+	}
+	if err := rows.Err(); err != nil {
+		return domain.ListResult{}, err
+	}
+	return out, nil
 }

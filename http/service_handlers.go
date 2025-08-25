@@ -159,7 +159,6 @@ func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
 
 // List ...
 func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
-	//GET services?user_id=<uuid>&name=plus&from=01-2025&to=12-2025&sort=created_at&dir=desc&limit=50&cursor=...
 	q := r.URL.Query()
 	var f domain.ListFilterService
 
@@ -173,7 +172,7 @@ func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "bad user_id", http.StatusBadRequest)
 			return
 		}
-		f.Uuid = user_id
+		f.Uuid = &user_id
 	}
 
 	if s := q.Get("price"); s != "" {
@@ -191,7 +190,7 @@ func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "bad fromDate (MM-YYY)", http.StatusBadRequest)
 			return
 		}
-		f.FromStartDate = fromStartDate
+		f.FromStartDate = &fromStartDate
 	}
 	if s := q.Get("to"); s != "" {
 		toStartDate, err := time.Parse("01-2006", s)
@@ -199,14 +198,14 @@ func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "bad toDate (MM-YYY)", http.StatusBadRequest)
 			return
 		}
-		f.ToStartDate = toStartDate
+		f.ToStartDate = &toStartDate
 	}
 	s := strings.ToLower(q.Get("sort"))
 	switch s {
-	case "created_at", "price", "service_name":
+	case "service_created_at", "service_price", "service_name":
 		f.SortBy = s
 	default:
-		f.SortBy = "created_at"
+		f.SortBy = "service_created_at"
 	}
 	s = strings.ToLower(q.Get("dir"))
 	switch s {
@@ -233,5 +232,7 @@ func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal err", http.StatusInternalServerError)
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(res)
 }

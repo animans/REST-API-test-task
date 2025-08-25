@@ -50,6 +50,11 @@ type fakeRepo struct {
 	saveErr error
 }
 
+// ListByFilter implements domain.ServiceRepository.
+func (f *fakeRepo) ListByFilter(domain.ListFilterService) (domain.ListResult, error) {
+	panic("unimplemented")
+}
+
 func (f *fakeRepo) GetByID(id string) (*domain.Service, error) {
 	sdate, err := time.Parse("01-2006", "08-2025")
 	if err != nil {
