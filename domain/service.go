@@ -47,6 +47,7 @@ type SumFilterService struct {
 	ToStartDate   *time.Time
 }
 
+// SumResult ...
 type SumResult struct {
 	Total int `json:"total"`
 }
