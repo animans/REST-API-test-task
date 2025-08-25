@@ -7,4 +7,5 @@ type ServiceRepository interface {
 	UpdateByID(sid string, s *Service) error
 	DeleteByID(sid string) error
 	ListByFilter(ListFilterService) (ListResult, error)
+	SumByFilter(SumFilterService) (SumResult, error)
 }

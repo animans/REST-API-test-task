@@ -236,3 +236,46 @@ func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(res)
 }
+
+// ListSum ...
+func (h *Handlers) ListSum(w http.ResponseWriter, r *http.Request) {
+	var f domain.SumFilterService
+
+	q := r.URL.Query()
+
+	if s := q.Get("name"); s != "" {
+		f.Name = s
+	}
+	if s := q.Get("user_id"); s != "" {
+		uuid, err := uuid.Parse(s)
+		if err != nil {
+			http.Error(w, "bad user_id", http.StatusBadRequest)
+			return
+		}
+		f.Uuid = &uuid
+	}
+	if s := q.Get("from"); s != "" {
+		fromStartDate, err := time.Parse("01-2006", s)
+		if err != nil {
+			http.Error(w, "bad fromDate (MM-YYYY)", http.StatusBadRequest)
+			return
+		}
+		f.FromStartDate = &fromStartDate
+	}
+	if s := q.Get("to"); s != "" {
+		toStartDate, err := time.Parse("01-2006", s)
+		if err != nil {
+			http.Error(w, "bad toDate (MM-YYYY)", http.StatusBadRequest)
+			return
+		}
+		f.ToStartDate = &toStartDate
+	}
+
+	out, err := h.Repo.SumByFilter(f)
+	if err != nil {
+		http.Error(w, "internal err", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(out)
+}

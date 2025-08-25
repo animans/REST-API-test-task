@@ -137,6 +137,7 @@ func (r *ServiceRepoPG) DeleteByID(sid string) error {
 	return nil
 }
 
+// ListByFilter ...
 func (r *ServiceRepoPG) ListByFilter(s domain.ListFilterService) (domain.ListResult, error) {
 	var (
 		args   []any
@@ -149,7 +150,7 @@ FROM service_list
 
 	if s.Name != "" {
 		args = append(args, "%"+s.Name+"%")
-		values = append(values, fmt.Sprintf("service_name=$%d", len(args)))
+		values = append(values, fmt.Sprintf("service_name ILIKE $%d", len(args)))
 	}
 	if s.Price > 0 {
 		args = append(args, s.Price)
@@ -198,4 +199,56 @@ FROM service_list
 		return domain.ListResult{}, err
 	}
 	return out, nil
+}
+
+// SumByFilter ...
+func (r *ServiceRepoPG) SumByFilter(s domain.SumFilterService) (domain.SumResult, error) {
+	var (
+		args   []any
+		values []string
+	)
+	base := `
+SELECT COALESCE(SUM(service_price), 0)
+FROM service_list
+`
+
+	if s.Name != "" {
+		args = append(args, "%"+s.Name+"%")
+		values = append(values, fmt.Sprintf("service_name ILIKE $%d", len(args)))
+	}
+	if s.Uuid != nil {
+		args = append(args, s.Uuid.String())
+		values = append(values, fmt.Sprintf("service_uuid=$%d", len(args)))
+	}
+	if s.FromStartDate != nil {
+		args = append(args, s.FromStartDate)
+		values = append(values, fmt.Sprintf("service_created_at>=$%d", len(args)))
+	}
+	if s.ToStartDate != nil {
+		args = append(args, s.ToStartDate)
+		values = append(values, fmt.Sprintf("service_created_at<=$%d", len(args)))
+	}
+
+	var where string
+	if len(values) > 0 {
+		where = "WHERE " + strings.Join(values, " AND ") + "\n"
+	}
+	sql := base + where
+
+	rows, err := r.db.Query(sql, args...)
+	if err != nil {
+		return domain.SumResult{}, err
+	}
+	defer rows.Close()
+
+	var total domain.SumResult
+	for rows.Next() {
+		var rowPrice int
+		if err := rows.Scan(&rowPrice); err != nil {
+			return domain.SumResult{}, err
+		}
+		total.Total += rowPrice
+	}
+
+	return total, nil
 }

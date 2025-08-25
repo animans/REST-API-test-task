@@ -39,6 +39,18 @@ type ListResult struct {
 	Items []CreatedRequest
 }
 
+// SumListService ...
+type SumFilterService struct {
+	Name          string
+	Uuid          *uuid.UUID
+	FromStartDate *time.Time
+	ToStartDate   *time.Time
+}
+
+type SumResult struct {
+	Total int `json:"total"`
+}
+
 // NewService ...
 func NewService(sn string, sp int, uuid uuid.UUID, sd time.Time) *Service {
 	return &Service{
