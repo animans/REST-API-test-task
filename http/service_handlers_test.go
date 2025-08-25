@@ -50,6 +50,11 @@ type fakeRepo struct {
 	saveErr error
 }
 
+// SumByFilter implements domain.ServiceRepository.
+func (f *fakeRepo) SumByFilter(domain.SumFilterService) (domain.SumResult, error) {
+	panic("unimplemented")
+}
+
 // ListByFilter implements domain.ServiceRepository.
 func (f *fakeRepo) ListByFilter(domain.ListFilterService) (domain.ListResult, error) {
 	panic("unimplemented")
