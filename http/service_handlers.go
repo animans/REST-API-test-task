@@ -2,7 +2,7 @@ package http
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"strconv"
@@ -41,40 +41,46 @@ type CreatedResponse struct {
 
 // Start ...
 func (h *Handlers) Start() error {
-	env, ok := os.LookupEnv("bind_addr")
+	env, ok := os.LookupEnv("BIND_ADDR")
 	if !ok {
 		env = "8080"
 	}
 	router := mux.NewRouter()
 	Register(router, h)
-	log.Println("Starting api")
+	slog.Info("Starting api")
 	return http.ListenAndServe(env, router)
 }
 
 // Create ...
 func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
+	slog.Info("Create start")
 	var in domain.CreatedRequest
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		slog.Error("invalid json", "err", err)
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
 	if strings.TrimSpace(in.Name) == "" {
+		slog.Error("invalid name", "name", in.Name)
 		http.Error(w, "name required", http.StatusBadRequest)
 		return
 	}
 	if in.Price < 0 {
+		slog.Error("invalid price", "price", in.Price)
 		http.Error(w, "price must be >= 0", http.StatusBadRequest)
 		return
 	}
 
 	sdate, err := time.Parse("01-2006", in.StartDate)
 	if err != nil {
+		slog.Error("invalid sdate", "err", err)
 		http.Error(w, "invalid time", http.StatusBadRequest)
 		return
 	}
 
 	uuid, err := uuid.Parse(in.Uuid)
 	if err != nil {
+		slog.Error("invalid uuid", "uuid", uuid)
 		http.Error(w, "invalid uuid", http.StatusBadRequest)
 		return
 	}
@@ -82,6 +88,7 @@ func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	ser := domain.NewService(in.Name, in.Price, uuid, sdate)
 	id, err := h.Repo.Save(ser)
 	if err != nil {
+		slog.Error("invalid id", "err", err)
 		http.Error(w, "save error", http.StatusInternalServerError)
 		return
 	}
@@ -89,13 +96,16 @@ func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	out := CreatedResponseID{ID: id}
 	_ = json.NewEncoder(w).Encode(out)
+	slog.Info("Create done", "out", out)
 }
 
 // Get ...
 func (h *Handlers) Get(w http.ResponseWriter, r *http.Request) {
+	slog.Info("Get start", "mux.Vars(r)", mux.Vars(r))
 	id := mux.Vars(r)["id"]
 	ser, err := h.Repo.GetByID(id)
 	if err != nil {
+		slog.Error("invalid id", "err", err)
 		http.Error(w, "invalid id", http.StatusBadRequest)
 		return
 	}
@@ -107,58 +117,71 @@ func (h *Handlers) Get(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(out)
+	slog.Info("Get done", "out", out)
 }
 
 // Put ...
 func (h *Handlers) Put(w http.ResponseWriter, r *http.Request) {
+	slog.Info("Put start", "mux.Vars(r)", mux.Vars(r))
 	id := mux.Vars(r)["id"]
 	var in domain.CreatedRequest
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		slog.Error("invalid json", "err", err)
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
 	}
 
 	if strings.TrimSpace(in.Name) == "" {
+		slog.Error("invalid name", "name", in.Name)
 		http.Error(w, "name required", http.StatusBadRequest)
 		return
 	}
 	if in.Price < 0 {
+		slog.Error("invalid price", "price", in.Price)
 		http.Error(w, "price must be >= 0", http.StatusBadRequest)
 		return
 	}
 
 	sdate, err := time.Parse("01-2006", in.StartDate)
 	if err != nil {
+		slog.Error("invalid sdate", "err", err)
 		http.Error(w, "invalid date (want MM-YYYY)", http.StatusBadRequest)
 		return
 	}
 
 	uuid, err := uuid.Parse(in.Uuid)
 	if err != nil {
+		slog.Error("invalid uuid", "err", err)
 		http.Error(w, "invalid uuid", http.StatusBadRequest)
 		return
 	}
 
 	ser := domain.NewService(in.Name, in.Price, uuid, sdate)
 	if err := h.Repo.UpdateByID(id, ser); err != nil {
+		slog.Error("update error", "err", err)
 		http.Error(w, "update error", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+	slog.Info("Put done")
 }
 
 // Delete ...
 func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
+	slog.Info("Delete start", "mux.Vars(r)", mux.Vars(r))
 	id := mux.Vars(r)["id"]
 	if err := h.Repo.DeleteByID(id); err != nil {
+		slog.Error("delete error", "err", err)
 		http.Error(w, "delete error", http.StatusBadRequest)
 	}
 	w.WriteHeader(http.StatusNoContent)
+	slog.Info("Delete done")
 }
 
 // List ...
 func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
+	slog.Info("List start", "r.URL.Query()", r.URL.Query())
 	q := r.URL.Query()
 	var f domain.ListFilterService
 
@@ -169,6 +192,7 @@ func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
 	if s := q.Get("user_id"); s != "" {
 		user_id, err := uuid.Parse(s)
 		if err != nil {
+			slog.Error("invalid user_id", "err", err)
 			http.Error(w, "bad user_id", http.StatusBadRequest)
 			return
 		}
@@ -178,6 +202,7 @@ func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
 	if s := q.Get("price"); s != "" {
 		price, err := strconv.Atoi(s)
 		if err != nil {
+			slog.Error("invalid price", "err", err)
 			http.Error(w, "bad price", http.StatusBadRequest)
 			return
 		}
@@ -187,6 +212,7 @@ func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
 	if s := q.Get("from"); s != "" {
 		fromStartDate, err := time.Parse("01-2006", s)
 		if err != nil {
+			slog.Error("invalid fromStartDate", "err", err)
 			http.Error(w, "bad fromDate (MM-YYY)", http.StatusBadRequest)
 			return
 		}
@@ -195,6 +221,7 @@ func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
 	if s := q.Get("to"); s != "" {
 		toStartDate, err := time.Parse("01-2006", s)
 		if err != nil {
+			slog.Error("invalid ToStartDate", "err", err)
 			http.Error(w, "bad toDate (MM-YYY)", http.StatusBadRequest)
 			return
 		}
@@ -229,16 +256,19 @@ func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
 
 	res, err := h.Repo.ListByFilter(f)
 	if err != nil {
+		slog.Error("invalid res", "err", err)
 		http.Error(w, "internal err", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(res)
+	slog.Info("List done", "res", res)
 }
 
 // ListSum ...
 func (h *Handlers) ListSum(w http.ResponseWriter, r *http.Request) {
+	slog.Info("ListSum start", "r.URL.Query()", r.URL.Query())
 	var f domain.SumFilterService
 
 	q := r.URL.Query()
@@ -249,6 +279,7 @@ func (h *Handlers) ListSum(w http.ResponseWriter, r *http.Request) {
 	if s := q.Get("user_id"); s != "" {
 		uuid, err := uuid.Parse(s)
 		if err != nil {
+			slog.Error("invalid uuid", "err", err)
 			http.Error(w, "bad user_id", http.StatusBadRequest)
 			return
 		}
@@ -257,6 +288,7 @@ func (h *Handlers) ListSum(w http.ResponseWriter, r *http.Request) {
 	if s := q.Get("from"); s != "" {
 		fromStartDate, err := time.Parse("01-2006", s)
 		if err != nil {
+			slog.Error("invalid fromStartDate", "err", err)
 			http.Error(w, "bad fromDate (MM-YYYY)", http.StatusBadRequest)
 			return
 		}
@@ -265,6 +297,7 @@ func (h *Handlers) ListSum(w http.ResponseWriter, r *http.Request) {
 	if s := q.Get("to"); s != "" {
 		toStartDate, err := time.Parse("01-2006", s)
 		if err != nil {
+			slog.Error("invalid toStartDate", "err", err)
 			http.Error(w, "bad toDate (MM-YYYY)", http.StatusBadRequest)
 			return
 		}
@@ -273,9 +306,11 @@ func (h *Handlers) ListSum(w http.ResponseWriter, r *http.Request) {
 
 	out, err := h.Repo.SumByFilter(f)
 	if err != nil {
+		slog.Error("invalid out", "err", err)
 		http.Error(w, "internal err", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(out)
+	slog.Info("ListSum", "out", out)
 }

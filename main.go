@@ -1,7 +1,9 @@
 package main
 
 import (
-	"log"
+	"log/slog"
+	"os"
+	"strings"
 
 	"github.com/animans/REST-API-test-task/http"
 	"github.com/animans/REST-API-test-task/infastructure"
@@ -11,20 +13,40 @@ import (
 // init ...
 func init() {
 	if err := godotenv.Load(); err != nil {
-		log.Print("No .env file found")
+		slog.Error("No .env file found", "err", err)
 	}
 }
 
 // main ...
 func main() {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: logLevel(os.ExpandEnv("LOG_LEVEL")),
+	}))
+	slog.SetDefault(logger)
+
 	repo := infastructure.NewServiceRepoPG()
 	err := repo.Open()
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("repo open failed", "err", err)
+		os.Exit(1)
 	}
 	defer repo.Close()
 	api := http.NewHandlers(repo)
 	if err := api.Start(); err != nil {
-		log.Fatal(err)
+		slog.Error("api start err", "err", err)
+		os.Exit(1)
+	}
+}
+
+func logLevel(s string) slog.Level {
+	switch strings.ToLower(s) {
+	case "debug":
+		return slog.LevelDebug
+	case "warn", "warning":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
 	}
 }
