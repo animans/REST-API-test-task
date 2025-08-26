@@ -1,0 +1,223 @@
+basePath: /
+definitions:
+  domain.CreatedRequest:
+    properties:
+      price:
+        type: integer
+      service_name:
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    type: object
+  domain.ListResult:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/domain.CreatedRequest'
+        type: array
+    type: object
+  domain.SumResult:
+    properties:
+      total:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: CRUDL по подпискам + summary
+  title: Subscriptions REST API
+  version: "1.0"
+paths:
+  /service:
+    get:
+      parameters:
+      - description: filter by service name (contains)
+        in: query
+        name: name
+        type: string
+      - description: User UUID
+        format: uuid
+        in: query
+        name: user_id
+        type: string
+      - description: Price
+        in: query
+        name: price
+        type: string
+      - description: From month (MM-YYYY)
+        example: 01-2024
+        in: query
+        name: from
+        type: string
+      - description: To month   (MM-YYYY)
+        example: 03-2024
+        in: query
+        name: to
+        type: string
+      - description: sort by (service_created_at, service_price, service_name)
+        in: query
+        name: sort
+        type: string
+      - description: order by (asc, desc)
+        in: query
+        name: dir
+        type: string
+      - description: limit  (1 <= limit <= 100)
+        example: "50"
+        in: query
+        name: limit
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.ListResult'
+      summary: List services
+      tags:
+      - service
+    post:
+      consumes:
+      - application/json
+      description: Создать запись подписки
+      parameters:
+      - description: service payload
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CreatedRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.CreatedRequest'
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "500":
+          description: internal error
+          schema:
+            type: string
+      summary: Create service
+      tags:
+      - service
+  /service/{id}:
+    delete:
+      parameters:
+      - description: Service ID
+        format: integer
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: deleted
+          schema:
+            type: string
+        "404":
+          description: not found
+          schema:
+            type: string
+      summary: Delete service
+      tags:
+      - service
+    get:
+      parameters:
+      - description: Service ID
+        format: integer
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.CreatedRequest'
+        "404":
+          description: not found
+          schema:
+            type: string
+      summary: Get service by ID
+      tags:
+      - service
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Service ID
+        format: integer
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: update payload
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CreatedRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: bad request
+          schema:
+            type: string
+        "404":
+          description: not found
+          schema:
+            type: string
+      summary: Update service
+      tags:
+      - service
+  /service/summary:
+    get:
+      description: Суммарная стоимость подписок за период с фильтрами
+      parameters:
+      - description: service name (contains)
+        in: query
+        name: name
+        type: string
+      - description: User UUID
+        format: uuid
+        in: query
+        name: user_id
+        type: string
+      - description: From month (MM-YYYY)
+        example: 01-2024
+        in: query
+        name: from
+        type: string
+      - description: To month   (MM-YYYY)
+        example: 03-2024
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.SumResult'
+        "400":
+          description: bad request
+          schema:
+            type: string
+      summary: Sum price by period
+      tags:
+      - service
+schemes:
+- http
+swagger: "2.0"

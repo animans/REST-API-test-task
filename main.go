@@ -5,10 +5,18 @@ import (
 	"os"
 	"strings"
 
+	_ "github.com/animans/REST-API-test-task/docs"
 	"github.com/animans/REST-API-test-task/http"
 	"github.com/animans/REST-API-test-task/infastructure"
 	"github.com/joho/godotenv"
 )
+
+// @title Subscriptions REST API
+// @version         1.0
+// @description     CRUDL по подпискам + summary
+// @BasePath        /
+// @schemes         http
+// @host            localhost:8080
 
 // init ...
 func init() {

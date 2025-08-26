@@ -51,7 +51,17 @@ func (h *Handlers) Start() error {
 	return http.ListenAndServe(env, router)
 }
 
-// Create ...
+// Create
+// @Summary      Create service
+// @Description  Создать запись подписки
+// @Tags         service
+// @Accept       json
+// @Produce      json
+// @Param        input body     domain.CreatedRequest true "service payload"
+// @Success      201   {object} domain.CreatedRequest
+// @Failure      400   {string} string "bad request"
+// @Failure      500   {string} string "internal error"
+// @Router       /service [post]
 func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Create start")
 	var in domain.CreatedRequest
@@ -94,12 +104,20 @@ func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
 	out := CreatedResponseID{ID: id}
 	_ = json.NewEncoder(w).Encode(out)
 	slog.Info("Create done", "out", out)
 }
 
-// Get ...
+// Get
+// @Summary      Get service by ID
+// @Tags         service
+// @Produce      json
+// @Param        id   path integer true "Service ID" format(integer)
+// @Success      200  {object} domain.CreatedRequest
+// @Failure      404  {string} string "not found"
+// @Router       /service/{id} [get]
 func (h *Handlers) Get(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Get start", "mux.Vars(r)", mux.Vars(r))
 	id := mux.Vars(r)["id"]
@@ -116,11 +134,21 @@ func (h *Handlers) Get(w http.ResponseWriter, r *http.Request) {
 		StartDate: ser.GetStartDate().Format("01-2006"),
 	}
 	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(out)
 	slog.Info("Get done", "out", out)
 }
 
-// Put ...
+// Update
+// @Summary      Update service
+// @Tags         service
+// @Accept       json
+// @Param        id    path  integer                 true "Service ID" format(integer)
+// @Param        input body  domain.CreatedRequest  true "update payload"
+// @Success      204
+// @Failure      400   {string} string "bad request"
+// @Failure      404   {string} string "not found"
+// @Router       /service/{id} [put]
 func (h *Handlers) Put(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Put start", "mux.Vars(r)", mux.Vars(r))
 	id := mux.Vars(r)["id"]
@@ -167,7 +195,13 @@ func (h *Handlers) Put(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Put done")
 }
 
-// Delete ...
+// Delete
+// @Summary      Delete service
+// @Tags         service
+// @Param        id path integer true "Service ID" format(integer)
+// @Success      204 {string} string "deleted"
+// @Failure      404 {string} string "not found"
+// @Router       /service/{id} [delete]
 func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Delete start", "mux.Vars(r)", mux.Vars(r))
 	id := mux.Vars(r)["id"]
@@ -179,7 +213,20 @@ func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Delete done")
 }
 
-// List ...
+// List
+// @Summary      List services
+// @Tags         service
+// @Produce      json
+// @Param        name    query string false "filter by service name (contains)"
+// @Param        user_id query string false "User UUID" format(uuid)
+// @Param        price   query string false "Price"
+// @Param        from    query string false "From month (MM-YYYY)" example(01-2024)
+// @Param        to      query string false "To month   (MM-YYYY)" example(03-2024)
+// @Param        sort    query string false "sort by (service_created_at, service_price, service_name)"
+// @Param        dir     query string false "order by (asc, desc)"
+// @Param        limit   query string false "limit  (1 <= limit <= 100)" example(50)
+// @Success      200 {object} domain.ListResult
+// @Router       /service [get]
 func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
 	slog.Info("List start", "r.URL.Query()", r.URL.Query())
 	q := r.URL.Query()
@@ -262,11 +309,23 @@ func (h *Handlers) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(res)
 	slog.Info("List done", "res", res)
 }
 
-// ListSum ...
+// Summary
+// @Summary      Sum price by period
+// @Description  Суммарная стоимость подписок за период с фильтрами
+// @Tags         service
+// @Produce      json
+// @Param        name    query string false "service name (contains)"
+// @Param        user_id query string false "User UUID" format(uuid)
+// @Param        from    query string false "From month (MM-YYYY)" example(01-2024)
+// @Param        to      query string false "To month   (MM-YYYY)" example(03-2024)
+// @Success      200 {object} domain.SumResult
+// @Failure      400 {string} string "bad request"
+// @Router       /service/summary [get]
 func (h *Handlers) ListSum(w http.ResponseWriter, r *http.Request) {
 	slog.Info("ListSum start", "r.URL.Query()", r.URL.Query())
 	var f domain.SumFilterService
@@ -311,6 +370,7 @@ func (h *Handlers) ListSum(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(out)
 	slog.Info("ListSum", "out", out)
 }
