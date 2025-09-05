@@ -1,4 +1,4 @@
-package infastructure
+package infrastructure
 
 import (
 	"log"

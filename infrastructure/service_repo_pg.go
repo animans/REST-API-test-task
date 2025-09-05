@@ -1,4 +1,4 @@
-package infastructure
+package infrastructure
 
 import (
 	"database/sql"
@@ -151,7 +151,7 @@ func (r *ServiceRepoPG) DeleteByID(sid string) error {
 	}
 	if rows == 0 {
 		slog.Error("DeleteByID Rows zero row", "rows", rows)
-		return fmt.Errorf("no rows deleted, id=%d", id)
+		return ErrNoRowsDeleted
 	}
 
 	slog.Debug("DeleteByID done")
