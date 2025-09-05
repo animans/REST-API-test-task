@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/animans/REST-API-test-task/domain"
+	"github.com/animans/REST-API-test-task/infrastructure"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
@@ -206,8 +207,13 @@ func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Delete start", "mux.Vars(r)", mux.Vars(r))
 	id := mux.Vars(r)["id"]
 	if err := h.Repo.DeleteByID(id); err != nil {
-		slog.Error("delete error", "err", err)
-		http.Error(w, "delete error", http.StatusBadRequest)
+		if err == infrastructure.ErrNoRowsDeleted {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		} else {
+			slog.Error("delete error", "err", err)
+			http.Error(w, "delete error", http.StatusBadRequest)
+		}
+
 	}
 	w.WriteHeader(http.StatusNoContent)
 	slog.Info("Delete done")

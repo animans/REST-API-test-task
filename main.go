@@ -7,7 +7,7 @@ import (
 
 	_ "github.com/animans/REST-API-test-task/docs"
 	"github.com/animans/REST-API-test-task/http"
-	"github.com/animans/REST-API-test-task/infastructure"
+	"github.com/animans/REST-API-test-task/infrastructure"
 	"github.com/joho/godotenv"
 )
 
@@ -32,7 +32,7 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
-	repo := infastructure.NewServiceRepoPG()
+	repo := infrastructure.NewServiceRepoPG()
 	err := repo.Open()
 	if err != nil {
 		slog.Error("repo open failed", "err", err)
